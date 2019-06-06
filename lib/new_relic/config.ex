@@ -99,17 +99,17 @@ defmodule NewRelic.Config do
     error_collector_ignore_errors: [Ecto.NoResultsError, MyApp.MustBeIgnored]
   ```
   """
-  def ignored_error?(%{__struct__: error}) do 
+  def ignored_error?(%{__struct__: error}) do
     error in ignored_errors()
   end
-  
+
   def ignored_error?(error) when is_binary(error) do
     Module.safe_concat("Elixir", error) in ignored_errors()
   rescue
     ArgumentError -> false
   end
 
-  def ignored_error?(_) do 
+  def ignored_error?(_) do
     false
   end
 

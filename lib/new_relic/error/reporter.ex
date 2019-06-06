@@ -4,7 +4,7 @@ defmodule NewRelic.Error.Reporter do
 
   def report_transaction_error(report) do
     {kind, exception, stacktrace} = parse_error_info(report[:error_info])
-    
+
     unless Config.ignored_error?(exception) do
       process_name = parse_process_name(report[:registered_name], stacktrace)
 

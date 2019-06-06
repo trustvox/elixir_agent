@@ -61,11 +61,15 @@ defmodule ConfigTest do
 
   test "Can configure errors to be ignored via Application" do
     Application.put_env(:new_relic_agent, :error_collector_ignore_errors, [RuntimeError])
-    
+
     assert NewRelic.Config.ignored_error?(%RuntimeError{})
     refute NewRelic.Config.ignored_error?(%ArithmeticError{})
 
-    Application.put_env(:new_relic_agent, :error_collector_ignore_errors, [RuntimeError, ArithmeticError])
+    Application.put_env(:new_relic_agent, :error_collector_ignore_errors, [
+      RuntimeError,
+      ArithmeticError
+    ])
+
     assert NewRelic.Config.ignored_error?(%RuntimeError{})
     assert NewRelic.Config.ignored_error?(%ArithmeticError{})
 

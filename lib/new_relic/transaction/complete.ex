@@ -15,7 +15,7 @@ defmodule NewRelic.Transaction.Complete do
       |> transform_name_attrs
       |> transform_time_attrs
       |> extract_transaction_info(pid)
-    
+
     unless ignore_transaction?(tx_attrs) do
       report_transaction_event(tx_attrs)
       report_transaction_trace(tx_attrs, tx_segments)
