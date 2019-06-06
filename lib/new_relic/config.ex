@@ -92,47 +92,29 @@ defmodule NewRelic.Config do
   Check if the error must be ignored by reporting system.
 
   You can specify a comma-delimited list of error modules that the agent should 
-  ignore by the key `NEW_RELIC_ERROR_COLLECTOR_IGNORE_ERRORS`:
-
-  ```
-  export NEW_RELIC_ERROR_COLLECTOR_IGNORE_ERRORS="Ecto.NoResultsError,MyApp.MustBeIgnored"
-  ```
-
-  Or by Application:
+  ignore by the Application config:
 
   ```
   config :new_relic_agent, 
     error_collector_ignore_errors: [Ecto.NoResultsError, MyApp.MustBeIgnored]
   ```
   """
-  def ignored_error?(%{__struct__: _} = error) do 
-    error.__struct__ in ignored_errors()
+  def ignored_error?(%{__struct__: error}) do 
+    error in ignored_errors()
   end
-  def ignored_error?(_), do: false
+  
+  def ignored_error?(error) when is_binary(error) do
+    Module.safe_concat("Elixir", error) in ignored_errors()
+  rescue
+    ArgumentError -> false
+  end
+
+  def ignored_error?(_) do 
+    false
+  end
 
   defp ignored_errors do
-    errors_env = 
-      System.get_env("NEW_RELIC_ERROR_COLLECTOR_IGNORE_ERRORS")
-      |> parse_env_errors()
-
-    errors_list = Application.get_env(:new_relic_agent, :error_collector_ignore_errors, [])
-
-    Enum.concat(errors_env, errors_list)
-  end
-
-  defp parse_env_errors(nil), do: []
-  defp parse_env_errors(arg) do
-    arg
-    |> String.split(",")
-    |> Stream.map(&String.trim/1)
-    |> Stream.map(&parse_env_error/1)
-    |> Enum.filter(&(!is_nil(&1)))
-  end
-
-  defp parse_env_error(error) do
-    Module.safe_concat("Elixir", error)
-  rescue
-    ArgumentError -> nil
+    Application.get_env(:new_relic_agent, :error_collector_ignore_errors, [])
   end
 
   @doc """

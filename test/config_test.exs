@@ -59,22 +59,6 @@ defmodule ConfigTest do
     System.delete_env("NEW_RELIC_ERROR_COLLECTOR_ENABLED")
   end
 
-  test "Can configure errors to be ignored via ENV" do
-    System.put_env("NEW_RELIC_ERROR_COLLECTOR_IGNORE_ERRORS", "RuntimeError")
-    
-    assert NewRelic.Config.ignored_error?(%RuntimeError{})
-    refute NewRelic.Config.ignored_error?(%ArithmeticError{})
-
-    System.put_env("NEW_RELIC_ERROR_COLLECTOR_IGNORE_ERRORS", "RuntimeError,ArithmeticError")
-    assert NewRelic.Config.ignored_error?(%RuntimeError{})
-    assert NewRelic.Config.ignored_error?(%ArithmeticError{})
-
-    System.delete_env("NEW_RELIC_ERROR_COLLECTOR_IGNORE_ERRORS")
-
-    refute NewRelic.Config.ignored_error?(%RuntimeError{})
-    refute NewRelic.Config.ignored_error?(%ArithmeticError{})
-  end
-
   test "Can configure errors to be ignored via Application" do
     Application.put_env(:new_relic_agent, :error_collector_ignore_errors, [RuntimeError])
     
