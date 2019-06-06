@@ -158,4 +158,18 @@ defmodule ErrorTraceTest do
     traces = TestHelper.gather_harvest(Collector.ErrorTrace.Harvester)
     assert length(traces) == 1
   end
+
+  test "doesn't report an error if it must be ignored" do
+    Application.put_env(:new_relic_agent, :error_collector_ignore_errors, [ArithmeticError])
+    TestHelper.restart_harvest_cycle(Collector.ErrorTrace.HarvestCycle)
+
+    :proc_lib.spawn(fn ->
+      raise ArithmeticError
+    end)
+
+    :timer.sleep(100)
+
+    traces = TestHelper.gather_harvest(Collector.ErrorTrace.Harvester)
+    assert length(traces) == 0
+  end
 end
