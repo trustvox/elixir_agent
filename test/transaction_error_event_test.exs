@@ -256,4 +256,59 @@ defmodule TransactionErrorEventTest do
     TestHelper.pause_harvest_cycle(Collector.ErrorTrace.HarvestCycle)
     TestHelper.pause_harvest_cycle(Collector.Metric.HarvestCycle)
   end
+
+  test "ignore errors by config" do
+    Application.put_env(:new_relic_agent, :error_collector_ignore_errors, [RuntimeError])
+    TestHelper.restart_harvest_cycle(Collector.TransactionEvent.HarvestCycle)
+    TestHelper.restart_harvest_cycle(Collector.TransactionErrorEvent.HarvestCycle)
+    TestHelper.restart_harvest_cycle(Collector.ErrorTrace.HarvestCycle)
+    TestHelper.restart_harvest_cycle(Collector.Metric.HarvestCycle)
+    Logger.remove_backend(:console)
+
+    TestHelper.request(TestPlugApp, conn(:get, "/error"))
+
+    traces = TestHelper.gather_harvest(Collector.ErrorTrace.Harvester)
+    assert length(traces) == 0
+
+    events = TestHelper.gather_harvest(Collector.TransactionErrorEvent.Harvester)
+    assert length(events) == 0
+
+    metrics = TestHelper.gather_harvest(Collector.Metric.Harvester)
+    refute TestHelper.find_metric(metrics, "Errors/all")
+
+    traces = TestHelper.gather_harvest(Collector.TransactionEvent.Harvester)
+    assert length(traces) == 0
+
+    Logger.add_backend(:console)
+    TestHelper.pause_harvest_cycle(Collector.TransactionEvent.HarvestCycle)
+    TestHelper.pause_harvest_cycle(Collector.TransactionErrorEvent.HarvestCycle)
+    TestHelper.pause_harvest_cycle(Collector.ErrorTrace.HarvestCycle)
+    TestHelper.pause_harvest_cycle(Collector.Metric.HarvestCycle)
+  end
+
+  test "ignore nested errors in the transaction" do
+    Application.put_env(:new_relic_agent, :error_collector_ignore_errors, [RuntimeError])
+    Logger.remove_backend(:console)
+    TestHelper.restart_harvest_cycle(Collector.ErrorTrace.HarvestCycle)
+    TestHelper.restart_harvest_cycle(Collector.TransactionErrorEvent.HarvestCycle)
+    TestHelper.restart_harvest_cycle(Collector.Metric.HarvestCycle)
+    {:ok, _sup} = Task.Supervisor.start_link(name: TestSup)
+
+    response = TestHelper.request(TestPlugApp, conn(:get, "/caught/error"))
+    assert response.status == 200
+    assert response.resp_body =~ "ok, fine"
+
+    traces = TestHelper.gather_harvest(Collector.ErrorTrace.Harvester)
+
+    assert length(traces) == 0
+
+    traces = TestHelper.gather_harvest(Collector.TransactionErrorEvent.Harvester)
+    assert length(traces) == 0
+
+    Process.sleep(50)
+    Logger.add_backend(:console)
+    TestHelper.pause_harvest_cycle(Collector.TransactionErrorEvent.HarvestCycle)
+    TestHelper.pause_harvest_cycle(Collector.ErrorTrace.HarvestCycle)
+    TestHelper.pause_harvest_cycle(Collector.Metric.HarvestCycle)
+  end
 end
