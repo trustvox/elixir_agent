@@ -130,4 +130,18 @@ defmodule ErrorTest do
              intrinsic[:"error.class"] == "File.Error"
            end)
   end
+
+  test "ignore errors by config" do
+    Application.put_env(:new_relic_agent, :error_collector_ignore_errors, [ArithmeticError])
+    TestHelper.restart_harvest_cycle(Collector.TransactionErrorEvent.HarvestCycle)
+
+    :proc_lib.spawn(fn ->
+      raise ArithmeticError
+    end)
+
+    :timer.sleep(100)
+
+    events = TestHelper.gather_harvest(Collector.TransactionErrorEvent.Harvester)
+    assert length(events) == 0
+  end
 end

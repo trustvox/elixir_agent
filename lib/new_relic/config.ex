@@ -89,6 +89,35 @@ defmodule NewRelic.Config do
   end
 
   @doc """
+  Check if the error must be ignored by reporting system.
+
+  You can specify a comma-delimited list of error modules that the agent should 
+  ignore by the Application config:
+
+  ```
+  config :new_relic_agent, 
+    error_collector_ignore_errors: [Ecto.NoResultsError, MyApp.MustBeIgnored]
+  ```
+  """
+  def ignored_error?(%{__struct__: error}) do
+    error in ignored_errors()
+  end
+
+  def ignored_error?(error) when is_binary(error) do
+    Module.safe_concat("Elixir", error) in ignored_errors()
+  rescue
+    ArgumentError -> false
+  end
+
+  def ignored_error?(_) do
+    false
+  end
+
+  defp ignored_errors do
+    Application.get_env(:new_relic_agent, :error_collector_ignore_errors, [])
+  end
+
+  @doc """
   Some Agent features can be controlled via configuration
 
   * `:error_collector_enabled` (default `true`)

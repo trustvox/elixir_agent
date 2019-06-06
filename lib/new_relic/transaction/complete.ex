@@ -16,15 +16,17 @@ defmodule NewRelic.Transaction.Complete do
       |> transform_time_attrs
       |> extract_transaction_info(pid)
 
-    report_transaction_event(tx_attrs)
-    report_transaction_trace(tx_attrs, tx_segments)
-    report_transaction_error_event(tx_attrs, tx_error)
-    report_transaction_metric(tx_attrs)
-    report_transaction_metrics(tx_attrs, tx_metrics)
-    report_aggregate(tx_attrs)
-    report_caller_metric(tx_attrs)
-    report_apdex_metric(apdex)
-    report_span_events(span_events)
+    unless ignore_transaction?(tx_attrs) do
+      report_transaction_event(tx_attrs)
+      report_transaction_trace(tx_attrs, tx_segments)
+      report_transaction_error_event(tx_attrs, tx_error)
+      report_transaction_metric(tx_attrs)
+      report_transaction_metrics(tx_attrs, tx_metrics)
+      report_aggregate(tx_attrs)
+      report_caller_metric(tx_attrs)
+      report_apdex_metric(apdex)
+      report_span_events(span_events)
+    end
   end
 
   def run(tx_attrs, _pid) do
@@ -520,4 +522,12 @@ defmodule NewRelic.Transaction.Complete do
 
   defp parse_error_expected(%{expected: true}), do: true
   defp parse_error_expected(_), do: false
+
+  defp ignore_transaction?(%{error: true, error_reason: reason}) do
+    [[_, error]] = Regex.scan(~r{^\%(.+)\{}, reason)
+
+    NewRelic.Config.ignored_error?(error)
+  end
+
+  defp ignore_transaction?(_), do: false
 end
